@@ -1,3 +1,4 @@
+
 # MAXEM_API: 
 import requests
 import logging
@@ -10,16 +11,17 @@ class MaxemCloud:
     chargerLastKwh = 0;
     requestCount = 0;
 
-    def __init__(self, email, password, maxemBoxID):
+    def __init__(self, email, password, maxemBoxID, logger):
         """Initialise of the switch."""
         self._email = email
         self._password = password
         self._maxemBoxID = maxemBoxID
         self._state = None
         self._sess = requests.Session()
+        self._LOGGER = logger
 
     def login(self):
-        _LOGGER.info("Login on API")
+        self._LOGGER.info("Login on API")
         self._sess = requests.Session()
         init = self._sess.get('https://my.maxem.io')
         auth = self._sess.post('https://my.maxem.io/login', 
@@ -28,10 +30,10 @@ class MaxemCloud:
         )
         
     def getData(self, url) -> list[float]:
-        requestCount = requestCount + 1;
-        if (requestCount = 20):
+        self.requestCount = self.requestCount + 1;
+        if (self.requestCount == 20):
             self.login();
-            requestCount = 0;
+            self.requestCount = 0;
     
         try:
             responseData = self._sess.get(url);
@@ -46,7 +48,7 @@ class MaxemCloud:
                 responseData = self._sess.get(url);
 
                 if responseData.status_code != 200:
-                    _LOGGER.warning(
+                    self._LOGGER.warning(
                         "Invalid status_code from Maxem: %s (%s)",
                         response.status_code,
                         self._attr_name,
@@ -66,7 +68,7 @@ class MaxemCloud:
             return [prevKwh, curKwh];
             
         except ValueError:
-            _LOGGER.error("Maxem API error: " + ValueError)
+            self._LOGGER.error("Maxem API error: " + ValueError)
             return ValueError
 
     def getHomeKwh(self) -> list[float]:
@@ -127,7 +129,7 @@ class MaxemCloud:
                 response = self._sess.get(url);
 
                 if response.status_code != 200:
-                    _LOGGER.warning(
+                    self._LOGGER.warning(
                         "Invalid status_code from Maxem: %s (%s)",
                         response.status_code,
                         self._attr_name,
@@ -137,6 +139,5 @@ class MaxemCloud:
             return True
 
         except ValueError:
-            _LOGGER.error("Maxem API error: " + ValueError)
+            self._LOGGER.error("Maxem API error: " + ValueError)
             return False
-           

@@ -43,7 +43,7 @@ def setup_platform(
     password  = config.get('password')
     maxemBoxID = config.get('maxemBoxID')
     
-    cloud = MaxemCloud(email, password, maxemBoxID);
+    cloud = MaxemCloud(email, password, maxemBoxID, _LOGGER);
     
     add_entities([ MaxemSwitch(cloud)], update_before_add=True)
  
