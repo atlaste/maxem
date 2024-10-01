@@ -57,45 +57,39 @@ import json
 import time
 
 class MaxemCloud:
+    homeLastKwh = 0;
+    chargerLastKwh = 0;
+
     def __init__(self, email, password, maxemBoxID):
         """Initialise of the switch."""
         self._email = email
         self._password = password
         self._maxemBoxID = maxemBoxID
         self._state = None
-
         self._sess = requests.Session()
 
+    def login(self):
+        _LOGGER.info("Login on API")
         init = self._sess.get('https://my.maxem.io')
         auth = self._sess.post('https://my.maxem.io/login', 
             data={"identifier": self._email, "password": self._password,"login":""},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
-
-    def getHomeKwh(self) -> float:
+        
+    def getData(self, url) -> list[float]:
         try:
-            startCurrentHour = int(time.time() * 1000)
-            minute = 60000
-            startCurrentHour -= startCurrentHour % minute
-            startPrevHour = startCurrentHour - minute
+            responseData = self._sess.get(url);
+                    
+        except http.client.RemoteDisconnected:
+            self.login();
+            responseData = self._sess.get(url);
+            
+        try:
+            if responseData.status_code != 200:
+                self.login();
+                responseData = self._sess.get(url);
 
-            urlHome = 'https://my.maxem.io/energyquery?maxemId=MX5-1-H-000237&collectionName=Home_energy&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
-            # urlSess = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=sessions&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
-
-            homeData = self._sess.get(urlHome);
-            # chargerData = self._sess.get(urlSess);
-                
-            if homeData.status_code != 200:
-                self._sess = requests.Session()
-
-                init = self._sess.get('https://my.maxem.io')
-                auth = self._sess.post('https://my.maxem.io/login', 
-                    data={"identifier": self._email, "password": self._password,"login":""},
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                )
-                homeData = self._sess.get(urlHome);
-
-                if homeData.status_code != 200:
+                if responseData.status_code != 200:
                     _LOGGER.warning(
                         "Invalid status_code from Maxem: %s (%s)",
                         response.status_code,
@@ -103,64 +97,51 @@ class MaxemCloud:
                     )
                     return
 
-            homeJson = homeData.json();
-            # chargerJson = chargerData.json();
+            responseJson = responseData.json();
 
             # [{"start":{"time":1727197200000},"delta":{"value":0.45665764799999997}}]
             # 
-            homeKwh = float(homeJson[0]['delta']['value']);
-            # chargerKwh = float(chargerJson[0]['delta']['value']);
+            curKwh = 0;
+            prevKwh = 0;
+            for x in responseJson:
+                prevKwh = curKwh;
+                curKwh = float(x['delta']['value']);
+                
+            return [prevKwh, curKwh];
             
-            return homeKwh
-
         except ValueError:
             _LOGGER.error("Maxem API error: " + ValueError)
             return ValueError
 
+    def getHomeKwh(self) -> list[float]:
+        startCurrentHour = int(time.time() * 1000)
+        hour = 3600000
+        startCurrentHour -= startCurrentHour % hour
+        startPrevHour = startCurrentHour - hour
+
+        url = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=Home_energy&period=range-hours&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
+        tmp = self.getData(url)
+        
+        if (self.homeLastKwh == tmp[0]):
+            return [tmp[1]];
+        else:
+            self.homeLastKwh = tmp[0];
+            return tmp;
+            
     def getChargerKwh(self) -> float:
-        try:
-            startCurrentHour = int(time.time() * 1000)
-            minute = 60000
-            startCurrentHour -= startCurrentHour % minute
-            startPrevHour = startCurrentHour - minute
+        startCurrentHour = int(time.time() * 1000)
+        hour = 3600000
+        startCurrentHour = startCurrentHour - (startCurrentHour % hour) + hour
+        startPrevHour = startCurrentHour - hour * 2
 
-            # urlHome = 'https://my.maxem.io/energyquery?maxemId=MX5-1-H-000237&collectionName=Home_energy&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
-            urlSess = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=sessions&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
-
-            # homeData = self._sess.get(urlHome);
-            chargerData = self._sess.get(urlSess);
-                
-            if chargerData.status_code != 200:
-                self._sess = requests.Session()
-
-                init = self._sess.get('https://my.maxem.io')
-                auth = self._sess.post('https://my.maxem.io/login', 
-                    data={"identifier": self._email, "password": self._password,"login":""},
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                )
-                chargerData = self._sess.get(urlSess);
-
-                if chargerData.status_code != 200:
-                    _LOGGER.warning(
-                        "Invalid status_code from Maxem: %s (%s)",
-                        response.status_code,
-                        self._attr_name,
-                    )
-                    return
-
-            # homeJson = homeData.json();
-            chargerJson = chargerData.json();
-
-            # [{"start":{"time":1727197200000},"delta":{"value":0.45665764799999997}}]
-            # 
-            # homeKwh = float(homeJson[0]['delta']['value']);
-            chargerKwh = float(chargerJson[0]['delta']['value']);
-            
-            return chargerKwh
-
-        except ValueError:
-            _LOGGER.error("Maxem API error: " + ValueError)
-            return ValueError
+        url = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=sessions&period=range-hours&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
+        tmp = self.getData(url)
+        
+        if (self.chargerLastKwh == tmp[0]):
+            return [tmp[1]];
+        else:
+            self.chargerLastKwh = tmp[0];
+            return tmp;
 
     def setChargerSwitch(self, isOn) -> bool:
         try:
@@ -171,16 +152,16 @@ class MaxemCloud:
             if isOn:
                 url = urlStart;
 
-            response = self._sess.get(url);
+            try:
+                response = self._sess.get(url);
+                        
+            except http.client.RemoteDisconnected:
+                self.login();
+                response = self._sess.get(url);
+                
                 
             if response.status_code != 200:
-                self._sess = requests.Session()
-
-                init = self._sess.get('https://my.maxem.io')
-                auth = self._sess.post('https://my.maxem.io/login', 
-                    data={"identifier": self._email, "password": self._password,"login":""},
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                )
+                self.login();
                 response = self._sess.get(url);
 
                 if response.status_code != 200:
@@ -202,8 +183,11 @@ class MaxemSwitch(Entity):
 
     def __init__(self, cloud):
         """Initialise of the switch."""
+        # TODO: Device class etc.
         self._cloud = cloud
         self._state = None
+        self._attr_unique_id = "switches.maxem.charger"
+        self._attr_name = "Maxem car charger switch"
 
     def turn_on(self, **kwargs):
         """Send the on command."""
@@ -223,26 +207,30 @@ class MaxemSwitch(Entity):
         return self._state == True # STATE_ON
         
 class MaxemHomeSensor(SensorEntity):
-    _attr_device_class = SensorDeviceClass.POWER
-    _attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL
+    _attr_unique_id = "sensors.maxem.home"
+    _attr_name = "Maxem home sensor"
 
-    def __init__(cloud):
+    def __init__(self, cloud):
         self._cloud = cloud
 
     def update(self) -> None:
         value = self._cloud.getHomeKwh()
-        self._attr_native_value = value
+        self._attr_native_value = value[0] * 1000
 
 class MaxemChargerSensor(SensorEntity):
-    _attr_device_class = SensorDeviceClass.POWER
-    _attr_native_unit_of_measurement = UnitOfPower.KILO_WATT
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL
+    _attr_unique_id = "sensors.maxem.charger"
+    _attr_name = "Maxem car charger sensor"
 
-    def __init__(cloud):
+    def __init__(self, cloud):
         self._cloud = cloud
 
     def update(self) -> None:
         value = self._cloud.getChargerKwh()
-        self._attr_native_value = value
+        self._attr_native_value = value[0] * 1000
 
