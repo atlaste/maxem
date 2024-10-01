@@ -56,7 +56,7 @@ import logging
 import json
 import time
 
-class MaxemCloud
+class MaxemCloud:
     def __init__(self, email, password, maxemBoxID):
         """Initialise of the switch."""
         self._email = email
@@ -79,7 +79,7 @@ class MaxemCloud
             startCurrentHour -= startCurrentHour % minute
             startPrevHour = startCurrentHour - minute
 
-            urlHome = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=Home_energy&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
+            urlHome = 'https://my.maxem.io/energyquery?maxemId=MX5-1-H-000237&collectionName=Home_energy&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
             # urlSess = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=sessions&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
 
             homeData = self._sess.get(urlHome);
@@ -124,7 +124,7 @@ class MaxemCloud
             startCurrentHour -= startCurrentHour % minute
             startPrevHour = startCurrentHour - minute
 
-            # urlHome = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=Home_energy&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
+            # urlHome = 'https://my.maxem.io/energyquery?maxemId=MX5-1-H-000237&collectionName=Home_energy&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
             urlSess = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=sessions&period=range-minutes&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
 
             # homeData = self._sess.get(urlHome);
@@ -161,14 +161,15 @@ class MaxemCloud
         except ValueError:
             _LOGGER.error("Maxem API error: " + ValueError)
             return ValueError
-       
 
     def setChargerSwitch(self, isOn) -> bool:
         try:
             urlPause = 'https://my.maxem.io/remotechargepoint/pauseAllChargePoints?maxemId=' + self._maxemBoxID
             urlStart = 'https://my.maxem.io/remotechargepoint/unPauseAllChargePoints?maxemId=' + self._maxemBoxID
             
-            url = isOn ? urlStart : urlPause;
+            url = urlPause;
+            if isOn:
+                url = urlStart;
 
             response = self._sess.get(url);
                 
@@ -195,7 +196,6 @@ class MaxemCloud
         except ValueError:
             _LOGGER.error("Maxem API error: " + ValueError)
             return False
-              
             
 class MaxemSwitch(Entity):
     """Representation of a Maxem chargerpoll switch."""
@@ -221,7 +221,6 @@ class MaxemSwitch(Entity):
     def is_on(self):
         """Get whether the switch is in on state."""
         return self._state == True # STATE_ON
- 
         
 class MaxemHomeSensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.POWER
@@ -246,3 +245,4 @@ class MaxemChargerSensor(SensorEntity):
     def update(self) -> None:
         value = self._cloud.getChargerKwh()
         self._attr_native_value = value
+
