@@ -1,7 +1,7 @@
 """Platform for sensor integration."""
 from __future__ import annotations
 
-import maxem
+from .maxem import MaxemCloud
 import logging
 import voluptuous as vol 
 from datetime import timedelta

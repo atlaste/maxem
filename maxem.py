@@ -1,4 +1,3 @@
-
 # MAXEM_API: 
 import requests
 import logging
@@ -9,6 +8,7 @@ import http
 class MaxemCloud:
     homeLastKwh = 0;
     chargerLastKwh = 0;
+    requestCount = 0;
 
     def __init__(self, email, password, maxemBoxID):
         """Initialise of the switch."""
@@ -28,6 +28,11 @@ class MaxemCloud:
         )
         
     def getData(self, url) -> list[float]:
+        requestCount = requestCount + 1;
+        if (requestCount = 20):
+            self.login();
+            requestCount = 0;
+    
         try:
             responseData = self._sess.get(url);
                     
