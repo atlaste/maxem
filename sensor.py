@@ -54,7 +54,7 @@ def setup_platform(
 class MaxemHomeSensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-    _attr_state_class = SensorStateClass.TOTAL
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_unique_id = "sensors.maxem.home"
     _attr_name = "Maxem home sensor"
 
@@ -68,7 +68,7 @@ class MaxemHomeSensor(SensorEntity):
 class MaxemChargerSensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-    _attr_state_class = SensorStateClass.TOTAL
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_unique_id = "sensors.maxem.charger"
     _attr_name = "Maxem car charger sensor"
 

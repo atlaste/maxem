@@ -17,28 +17,28 @@ class MaxemCloud:
         self._password = password
         self._maxemBoxID = maxemBoxID
         self._state = None
-        self._sess = requests.Session()
         self._LOGGER = logger
+        self.login();
 
     def login(self):
-        self._LOGGER.info("Login on API")
-        self._sess = requests.Session()
-        init = self._sess.get('https://my.maxem.io')
+        self._LOGGER.warning("Login on API");
+        self._sess = requests.Session();
+        init = self._sess.get('https://my.maxem.io');
         auth = self._sess.post('https://my.maxem.io/login', 
             data={"identifier": self._email, "password": self._password,"login":""},
             headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        
+        );
+
     def getData(self, url) -> list[float]:
         self.requestCount = self.requestCount + 1;
-        if (self.requestCount == 20):
+        if (self.requestCount == 13):
             self.login();
             self.requestCount = 0;
     
         try:
             responseData = self._sess.get(url);
                     
-        except requests.exceptions.ConnectionError:
+        except requests.ConnectionException:
             self.login();
             responseData = self._sess.get(url);
             
