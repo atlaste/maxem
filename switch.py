@@ -10,12 +10,9 @@ from homeassistant.components.switch import (PLATFORM_SCHEMA)
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.helpers.entity import Entity
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorStateClass,
+from homeassistant.components.switch import (
+    SwitchEntity,
 )
-from homeassistant.const import UnitOfElectricCurrent, UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -24,7 +21,6 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 import homeassistant.helpers.config_validation as cv
 
 _LOGGER = logging.getLogger(__name__)
-SCAN_INTERVAL = timedelta(seconds=60)
 
 # Validation of the user's configuration
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -49,33 +45,34 @@ def setup_platform(
     
     cloud = MaxemCloud(email, password, maxemBoxID);
     
-    add_entities([ MaxemHomeSensor(cloud), MaxemChargerSensor(cloud) ], update_before_add=True)
+    add_entities([ MaxemSwitch(cloud)], update_before_add=True)
  
-class MaxemHomeSensor(SensorEntity):
-    _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-    _attr_state_class = SensorStateClass.TOTAL
-    _attr_unique_id = "sensors.maxem.home"
-    _attr_name = "Maxem home sensor"
+class MaxemSwitch(SwitchEntity):
+    """Representation of a Maxem chargerpoll switch."""
+    _attr_unique_id = "switches.maxem.charger"
+    _attr_name = "Maxem car charger switch"
+    _attr_device_class: SwitchDeviceClass.OUTLET
 
     def __init__(self, cloud):
+        """Initialise of the switch."""
+        # TODO: Device class etc.
         self._cloud = cloud
+        self._state = None
 
-    def update(self) -> None:
-        value = self._cloud.getHomeKwh()
-        self._attr_native_value = value[0]
+    def turn_on(self, **kwargs):
+        """Send the on command."""
+        self._cloud.setChargerSwitch(True);
+        self._state = True
+        _LOGGER.debug("Maxem ===> Enable charging for: %s", self._maxemBoxID)   
 
-class MaxemChargerSensor(SensorEntity):
-    _attr_device_class = SensorDeviceClass.ENERGY
-    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-    _attr_state_class = SensorStateClass.TOTAL
-    _attr_unique_id = "sensors.maxem.charger"
-    _attr_name = "Maxem car charger sensor"
+    def turn_off(self, **kwargs):
+        """Send the off command."""
+        self._cloud.setChargerSwitch(False);
+        self._state = False
+        _LOGGER.debug("Maxem ===> Disable charging for: %s", self._maxemBoxID)
 
-    def __init__(self, cloud):
-        self._cloud = cloud
-
-    def update(self) -> None:
-        value = self._cloud.getChargerKwh()
-        self._attr_native_value = value[0]
-
+    @property
+    def is_on(self):
+        """Get whether the switch is in on state."""
+        return self._state == True # STATE_ON
+        
