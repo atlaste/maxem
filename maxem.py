@@ -31,7 +31,7 @@ class MaxemCloud:
 
     def getData(self, url) -> list[float]:
         self.requestCount = self.requestCount + 1;
-        if (self.requestCount == 13):
+        if (self.requestCount == 21):
             self.login();
             self.requestCount = 0;
     

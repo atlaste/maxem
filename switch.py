@@ -45,8 +45,8 @@ def setup_platform(
     
     cloud = MaxemCloud(email, password, maxemBoxID, _LOGGER);
     
-    add_entities([ MaxemSwitch(cloud)] )
- 
+    add_entities([ MaxemSwitch(cloud)])
+
 class MaxemSwitch(SwitchEntity):
     """Representation of a Maxem chargerpoll switch."""
     _attr_unique_id = "switches.maxem.charger"

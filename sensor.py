@@ -22,6 +22,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 # Import the device class from the component that you want to support
 import homeassistant.helpers.config_validation as cv
+import homeassistant.util.dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
 SCAN_INTERVAL = timedelta(seconds=60)
@@ -50,11 +51,11 @@ def setup_platform(
     cloud = MaxemCloud(email, password, maxemBoxID, _LOGGER);
     
     add_entities([ MaxemHomeSensor(cloud), MaxemChargerSensor(cloud) ], update_before_add=True)
- 
+
 class MaxemHomeSensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_state_class = SensorStateClass.TOTAL
     _attr_unique_id = "sensors.maxem.home"
     _attr_name = "Maxem home sensor"
 
@@ -64,6 +65,8 @@ class MaxemHomeSensor(SensorEntity):
     def update(self) -> None:
         value = self._cloud.getHomeKwh()
         self._attr_native_value = value[0]
+        if len(value)==2:
+            self._attr_last_reset = dt_util.utcnow()
 
 class MaxemChargerSensor(SensorEntity):
     _attr_device_class = SensorDeviceClass.ENERGY
