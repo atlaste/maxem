@@ -122,6 +122,9 @@ class MaxemCloud:
         url = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=Home_energy&period=range-hours&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
         tmp = self.getData(url)
         
+        if (self.chargerLastKwh == 0):
+            self.chargerLastKwh = tmp[0];
+        
         if (self.homeLastKwh == tmp[0]):
             return [tmp[1]];
         else:
@@ -136,6 +139,9 @@ class MaxemCloud:
 
         url = 'https://my.maxem.io/energyquery?maxemId=' + self._maxemBoxID + '&collectionName=sessions&period=range-hours&startTime=' + str(startPrevHour) + '&endTime=' + str(startCurrentHour - 1)
         tmp = self.getData(url)
+        
+        if (self.chargerLastKwh == 0):
+            self.chargerLastKwh = tmp[0];
         
         if (self.chargerLastKwh == tmp[0]):
             return [tmp[1]];
